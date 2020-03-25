@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="cordova-plugin-log2c-fabu-love" version="1.0.0"
+    xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>Cordova Fabu.love Update</name>
+    <description>
+        搭配爱发布服务端实现的App自动检查更新组件
+    </description>
+    <engines>
+        <engine name="cordova" version="&gt;=7.0.0" />
+    </engines>
+    <preference name="DOMAIN"/>
+    <preference name="TEAM_ID"/>
+    <platform name="android">
+        <config-file parent="/*" target="res/xml/config.xml">
+            <feature name="FabuLove">
+                <param name="android-package" value="com.log2c.cordova.plugin.fabulove.FabuLovePlugin" />
+                <param name="onload" value="true"/>
+            </feature>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <meta-data android:name="fabu_love_domain" android:value="$DOMAIN" />
+            <meta-data android:name="fabu_love_team_id" android:value="$TEAM_ID" />
+        </config-file>
+        <source-file src="src/android/FabuLovePlugin.java" target-dir="src/com/log2c/cordova/plugin/fabulove" />
+        <source-file src="src/android/ResponseModel.java" target-dir="src/com/log2c/cordova/plugin/fabulove" />
+    </platform>
+    <platform name="ios">
+        <config-file parent="/*" target="config.xml">
+            <feature name="FabuLove">
+                <param name="ios-package" value="FabuLovePlugin" />
+                <param name="onload" value="true"/>
+            </feature>
+        </config-file>
+        <config-file target="*-Info.plist" parent="fabu_love_config">
+            <dict>
+                <key>fabu_love_domain</key>
+                <string>$DOMAIN</string>
+                <key>fabu_love_team_id</key>
+                <string>$TEAM_ID</string>
+            </dict>
+        </config-file>
+        <header-file src="src/ios/FabuLovePlugin.h" />
+        <source-file src="src/ios/FabuLovePlugin.m" />
+    </platform>
+</plugin>

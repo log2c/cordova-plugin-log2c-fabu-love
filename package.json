@@ -1,0 +1,25 @@
+{
+  "name": "cordova-plugin-log2c-fabu-love",
+  "version": "1.0.0",
+  "description": "Cordova android app update plugin.",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/log2c/cordova-plugin-log2c-fabu-love.git"
+  },
+  "keywords": [
+    "cordova",
+    "android",
+    "ios",
+    "update",
+    "app",
+    "update"
+  ],
+  "author": "log2c",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/log2c/cordova-plugin-log2c-fabu-love/issues"
+  },
+  "homepage": "https://github.com/log2c/cordova-plugin-log2c-fabu-love#readme"
+}
