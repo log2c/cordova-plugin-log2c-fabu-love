@@ -15,7 +15,11 @@ import com.log2c.cordova.plugin.appupdate.AdvanceUpdateConfig;
 import com.log2c.cordova.plugin.appupdate.AppUpdate;
 import com.log2c.cordova.plugin.appupdate.UpdateInfoModel;
 
+import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -33,10 +37,26 @@ public class FabuLovePlugin extends CordovaPlugin {
         super.pluginInitialize();
         try {
             initUpdateConfig();
-            checkUpdate();
+            checkUpdate(false, null);
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+        if ("checkUpdate".equalsIgnoreCase(action)) {
+            JSONObject config = args.getJSONObject(0);
+            boolean checkOnly = config.getBoolean("checkOnly");
+            try {
+                checkUpdate(checkOnly, callbackContext);
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+                callbackContext.error(e.getMessage());
+            }
+            return true;
+        }
+        return false;
     }
 
     private void initUpdateConfig() {
@@ -50,7 +70,7 @@ public class FabuLovePlugin extends CordovaPlugin {
         AppUpdate.setConfig(updateConfig, cordova.getActivity().getApplication(), null);
     }
 
-    private void checkUpdate() throws PackageManager.NameNotFoundException {
+    private void checkUpdate(boolean checkOnly, CallbackContext callbackContext) throws PackageManager.NameNotFoundException {
         final ApplicationInfo appInfo = cordova.getContext().getPackageManager().getApplicationInfo(cordova.getContext().getPackageName(), PackageManager.GET_META_DATA);
         final String domain = appInfo.metaData.getString(META_DATA_DOMAIN);
         final String teamId = appInfo.metaData.getString(META_DATA_TEAM_ID);
@@ -66,34 +86,48 @@ public class FabuLovePlugin extends CordovaPlugin {
         Log.d(TAG, "Final request URL: " + url);
         requestCheckUpdate(url, new RequestCallback() {
             @Override
-            public void onResponse(ResponseModel model) {
-                Log.d(TAG, model.toString());
-                if (model.isSuccess()) {    // 有更新
-                    ResponseModel.DataBean.VersionBean versionBean = model.getData().getVersion();
-                    final boolean forceUpdate = "force".equalsIgnoreCase(versionBean.getUpdateMode());
-                    final String logs = TextUtils.isEmpty(versionBean.getChangelog()) ? "" : versionBean.getChangelog();
-                    final String downloadUrl = domain + "/" + versionBean.getDownloadUrl();
-                    final long apkSize = versionBean.getSize();
-                    final int versionCode = Integer.parseInt(versionBean.getVersionCode());
-                    final String versionName = versionBean.getVersionStr();
-
-                    UpdateInfoModel infoModel = new UpdateInfoModel();
-                    infoModel.setForceUpdate(forceUpdate);
-                    infoModel.setLogs(logs);
-                    infoModel.setApkUrl(downloadUrl);
-                    infoModel.setApkSize(apkSize);
-                    infoModel.setVersionCode(versionCode);
-                    infoModel.setVersionName(versionName);
-
-                    final String json = new Gson().toJson(infoModel);
-                    cordova.getActivity().runOnUiThread(() -> AppUpdateUtils.getInstance()
-                            .checkUpdate(json));
+            public void onResponse(ResponseModel model) throws JSONException {
+                JSONObject result = new JSONObject();
+                if (!model.isSuccess() && checkOnly && callbackContext != null) {    // 无更新
+                    result.put("hasNewVersion", false);
+                    callbackContext.success(result);
+                    return;
                 }
+                ResponseModel.DataBean.VersionBean versionBean = model.getData().getVersion();
+                final boolean forceUpdate = "force".equalsIgnoreCase(versionBean.getUpdateMode());
+                final String logs = TextUtils.isEmpty(versionBean.getChangelog()) ? "" : versionBean.getChangelog();
+                final String downloadUrl = domain + "/" + versionBean.getDownloadUrl();
+                final long apkSize = versionBean.getSize();
+                final int versionCode = Integer.parseInt(versionBean.getVersionCode());
+                final String versionName = versionBean.getVersionStr();
+
+                if (checkOnly && callbackContext != null) {
+                    result.put("hasNewVersion", true);
+                    result.put("changelog", logs);
+                    result.put("version", versionName);
+                    callbackContext.success(result);
+                    return;
+                }
+
+                UpdateInfoModel infoModel = new UpdateInfoModel();
+                infoModel.setForceUpdate(forceUpdate);
+                infoModel.setLogs(logs);
+                infoModel.setApkUrl(downloadUrl);
+                infoModel.setApkSize(apkSize);
+                infoModel.setVersionCode(versionCode);
+                infoModel.setVersionName(versionName);
+
+                final String json = new Gson().toJson(infoModel);
+                cordova.getActivity().runOnUiThread(() -> AppUpdateUtils.getInstance()
+                        .checkUpdate(json));
+
             }
 
             @Override
             public void onRequestError(Exception e) {
-                Log.e(TAG, "onRequestError: ", e);
+                if (callbackContext != null) {
+                    callbackContext.error(e.getMessage());
+                }
             }
         });
     }
@@ -178,7 +212,7 @@ public class FabuLovePlugin extends CordovaPlugin {
     }
 
     interface RequestCallback {
-        void onResponse(ResponseModel model);
+        void onResponse(ResponseModel model) throws JSONException;
 
         void onRequestError(Exception e);
     }
