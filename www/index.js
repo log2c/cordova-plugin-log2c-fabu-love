@@ -18,11 +18,8 @@ module.exports = {
      * @param {*} errorCallback 回调
      */
     checkUpdate: function (config, successCallback, errorCallback) {
-        this.callNative('checkUpdate', [{
-            ...{
-                checkOnly: false
-            },
-            ...config
-        }], successCallback, errorCallback);
+        this.callNative('checkUpdate', [Object.assign({
+            checkOnly: false
+        }, config)], successCallback, errorCallback);
     }
 }
