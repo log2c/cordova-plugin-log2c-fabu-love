@@ -1,13 +1,43 @@
 {
-  "name": "cordova-plugin-log2c-fabu-love",
-  "version": "1.1.1",
-  "description": "Cordova android app update plugin.",
-  "main": "index.js",
-  "scripts": {},
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/log2c/cordova-plugin-log2c-fabu-love.git"
+  "_args": [
+    [
+      "cordova-plugin-log2c-fabu-love@1.1.1"
+    ]
+  ],
+  "_from": "cordova-plugin-log2c-fabu-love",
+  "_id": "cordova-plugin-log2c-fabu-love@2.0.0",
+  "_inBundle": false,
+  "_integrity": "sha512-V3PCDso0xz4UxJFIJaEzVRS81XdHAHXQ+Pfn14wrzU5y1s4iGJPqmFe8KQG5aVyJYEgX1bnpEzJ/PDwjtVG64Q==",
+  "_location": "/cordova-plugin-log2c-fabu-love",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "cordova-plugin-log2c-fabu-love",
+    "name": "cordova-plugin-log2c-fabu-love",
+    "escapedName": "cordova-plugin-log2c-fabu-love",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
   },
+  "_requiredBy": [
+    "#DEV:/",
+    "#USER"
+  ],
+  "_resolved": "https://registry.npmjs.org/cordova-plugin-log2c-fabu-love/-/cordova-plugin-log2c-fabu-love-2.0.0.tgz",
+  "_shasum": "5daecdd116c72cf9d47d9e2e23f03ffb8ffc7a71",
+  "_spec": "cordova-plugin-log2c-fabu-love",
+  "_where": "E:\\Workspace\\xh-app\\src-cordova",
+  "author": {
+    "name": "log2c"
+  },
+  "bugs": {
+    "url": "https://github.com/log2c/cordova-plugin-log2c-fabu-love/issues"
+  },
+  "bundleDependencies": false,
+  "deprecated": false,
+  "description": "Cordova android app update plugin.",
+  "homepage": "https://github.com/log2c/cordova-plugin-log2c-fabu-love#readme",
   "keywords": [
     "cordova",
     "android",
@@ -16,10 +46,13 @@
     "app",
     "update"
   ],
-  "author": "log2c",
   "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/log2c/cordova-plugin-log2c-fabu-love/issues"
+  "main": "index.js",
+  "name": "cordova-plugin-log2c-fabu-love",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/log2c/cordova-plugin-log2c-fabu-love.git"
   },
-  "homepage": "https://github.com/log2c/cordova-plugin-log2c-fabu-love#readme"
+  "scripts": {},
+  "version": "2.0.0"
 }

@@ -4,16 +4,15 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.cretin.www.cretinautoupdatelibrary.model.TypeConfig;
-import com.cretin.www.cretinautoupdatelibrary.utils.AppUpdateUtils;
+import com.azhon.appupdate.config.UpdateConfiguration;
+import com.azhon.appupdate.listener.OnDownloadListener;
+import com.azhon.appupdate.manager.DownloadManager;
 import com.google.gson.Gson;
-import com.log2c.cordova.plugin.appupdate.AdvanceUpdateConfig;
-import com.log2c.cordova.plugin.appupdate.AppUpdate;
-import com.log2c.cordova.plugin.appupdate.UpdateInfoModel;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -22,10 +21,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DecimalFormat;
 
 public class FabuLovePlugin extends CordovaPlugin {
     private static final String TAG = FabuLovePlugin.class.getSimpleName();
@@ -36,7 +38,6 @@ public class FabuLovePlugin extends CordovaPlugin {
     protected void pluginInitialize() {
         super.pluginInitialize();
         try {
-            initUpdateConfig();
             checkUpdate(false, null);
         } catch (Exception e) {
             e.printStackTrace();
@@ -57,17 +58,6 @@ public class FabuLovePlugin extends CordovaPlugin {
             return true;
         }
         return false;
-    }
-
-    private void initUpdateConfig() {
-        AdvanceUpdateConfig updateConfig = new AdvanceUpdateConfig();
-        updateConfig.setUiThemeType(TypeConfig.UI_THEME_I)
-                .setMethodType(TypeConfig.METHOD_GET)
-                .setDataSourceType(TypeConfig.DATA_SOURCE_TYPE_JSON)
-                .setShowNotification(true)
-                .setNeedFileMD5Check(false)
-                .setAutoDownloadBackground(false);
-        AppUpdate.setConfig(updateConfig, cordova.getActivity().getApplication(), null);
     }
 
     private void checkUpdate(boolean checkOnly, CallbackContext callbackContext) throws PackageManager.NameNotFoundException {
@@ -97,6 +87,7 @@ public class FabuLovePlugin extends CordovaPlugin {
                 final boolean forceUpdate = "force".equalsIgnoreCase(versionBean.getUpdateMode());
                 final String logs = TextUtils.isEmpty(versionBean.getChangelog()) ? "" : versionBean.getChangelog();
                 final String downloadUrl = domain + "/" + versionBean.getDownloadUrl();
+                Log.d(TAG, "Download URL: " + downloadUrl);
                 final long apkSize = versionBean.getSize();
                 final int versionCode = Integer.parseInt(versionBean.getVersionCode());
                 final String versionName = versionBean.getVersionStr();
@@ -109,18 +100,7 @@ public class FabuLovePlugin extends CordovaPlugin {
                     return;
                 }
 
-                UpdateInfoModel infoModel = new UpdateInfoModel();
-                infoModel.setForceUpdate(forceUpdate);
-                infoModel.setLogs(logs);
-                infoModel.setApkUrl(downloadUrl);
-                infoModel.setApkSize(apkSize);
-                infoModel.setVersionCode(versionCode);
-                infoModel.setVersionName(versionName);
-
-                final String json = new Gson().toJson(infoModel);
-                cordova.getActivity().runOnUiThread(() -> AppUpdateUtils.getInstance()
-                        .checkUpdate(json));
-
+                cordova.getActivity().runOnUiThread(() -> startDownload(callbackContext, forceUpdate, logs, downloadUrl, apkSize, versionCode, versionName));
             }
 
             @Override
@@ -130,6 +110,74 @@ public class FabuLovePlugin extends CordovaPlugin {
                 }
             }
         });
+    }
+
+    private void startDownload(CallbackContext callbackContext, boolean forceUpdate, String logs, String downloadUrl, long apkSize, int verCode, String verName) {
+        DownloadManager manager = DownloadManager.getInstance(cordova.getContext());
+        DecimalFormat df = new DecimalFormat("0.00");
+        BigDecimal size = new BigDecimal(apkSize)
+                .divide(new BigDecimal(1024), 1, BigDecimal.ROUND_HALF_UP)
+                .divide(new BigDecimal(1024), 1, BigDecimal.ROUND_HALF_UP);
+        manager.setApkName(verName + ".apk")
+                .setApkUrl(downloadUrl)
+                .setSmallIcon(getSmallIcon())
+                .setApkSize(df.format(size))
+                .setApkDescription(logs)
+                .setApkVersionCode(verCode)
+                .setApkVersionName(verName)
+                .setConfiguration(new UpdateConfiguration()
+                        .setForcedUpgrade(forceUpdate)
+                        .setShowNotification(true)
+                        .setDialogButtonTextColor(Color.WHITE)
+                        .setShowNotification(true)
+                        .setUsePlatform(false)
+                        .setOnDownloadListener(new OnDownloadListener() {
+                            @Override
+                            public void start() {
+
+                            }
+
+                            @Override
+                            public void downloading(int max, int progress) {
+
+                            }
+
+                            @Override
+                            public void done(File apk) {
+
+                            }
+
+                            @Override
+                            public void cancel() {
+
+                            }
+
+                            @Override
+                            public void error(Exception e) {
+                                if (callbackContext != null) {
+                                    postErrorToCordova(-1, String.format("Download fail: %1$s", e.getMessage()), callbackContext);
+                                }
+                            }
+                        }))
+                .download();
+    }
+
+    private int getSmallIcon() {
+        return getResourceId(cordova.getContext(), "ic_launcher", "mipmap", cordova.getContext().getPackageName());
+    }
+
+    private void postErrorToCordova(int code, String msg, CallbackContext callbackContext) {
+        if (callbackContext == null) {
+            return;
+        }
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("code", code);
+            jsonObject.put("msg", msg);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        callbackContext.error(jsonObject);
     }
 
     /**
@@ -215,5 +263,23 @@ public class FabuLovePlugin extends CordovaPlugin {
         void onResponse(ResponseModel model) throws JSONException;
 
         void onRequestError(Exception e);
+    }
+
+    /**
+     * 获取资源 ID
+     *
+     * @param context       Context
+     * @param pVariableName 资源名称
+     * @param pResourceName 类型 "drawable || mipmap || string"
+     * @param pPackageName  包名
+     * @return ResID
+     */
+    public static int getResourceId(Context context, String pVariableName, String pResourceName, String pPackageName) {
+        try {
+            return context.getResources().getIdentifier(pVariableName, pResourceName, pPackageName);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 }
