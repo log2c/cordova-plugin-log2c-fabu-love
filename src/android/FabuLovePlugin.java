@@ -100,7 +100,7 @@ public class FabuLovePlugin extends CordovaPlugin {
                     return;
                 }
 
-                cordova.getActivity().runOnUiThread(() -> startDownload(callbackContext, forceUpdate, logs, downloadUrl, apkSize, versionCode, versionName));
+                cordova.getActivity().runOnUiThread(() -> startDownload(callbackContext, forceUpdate, logs, downloadUrl, apkSize, versionCode, versionName, versionBean));
             }
 
             @Override
@@ -112,7 +112,48 @@ public class FabuLovePlugin extends CordovaPlugin {
         });
     }
 
-    private void startDownload(CallbackContext callbackContext, boolean forceUpdate, String logs, String downloadUrl, long apkSize, int verCode, String verName) {
+    private void addDownloadCount(String appId, String versionId) {
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            BufferedReader reader = null;
+            try {
+                final ApplicationInfo appInfo = cordova.getContext().getPackageManager().getApplicationInfo(cordova.getContext().getPackageName(), PackageManager.GET_META_DATA);
+                final String domain = appInfo.metaData.getString(META_DATA_DOMAIN);
+                final String strUrl = domain +
+                        "/api/count/" +
+                        appId +
+                        "/" +
+                        versionId;
+                URL url = new URL(strUrl);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+                InputStream in = connection.getInputStream();
+                reader = new BufferedReader(new InputStreamReader(in));
+                StringBuilder sbd = new StringBuilder();
+                String line;
+                while (null != (line = reader.readLine())) {
+                    sbd.append(line);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (null != reader) {
+                        reader.close();
+                    }
+                    if (null != connection) {
+                        connection.disconnect();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    private void startDownload(CallbackContext callbackContext, boolean forceUpdate, String logs, String downloadUrl, long apkSize, int verCode, String verName, ResponseModel.DataBean.VersionBean versionBean) {
         DownloadManager manager = DownloadManager.getInstance(cordova.getContext());
         DecimalFormat df = new DecimalFormat("0.00");
         BigDecimal size = new BigDecimal(apkSize)
@@ -144,7 +185,7 @@ public class FabuLovePlugin extends CordovaPlugin {
 
                             @Override
                             public void done(File apk) {
-
+                                addDownloadCount(versionBean.getAppId(), versionBean.get_id());
                             }
 
                             @Override
