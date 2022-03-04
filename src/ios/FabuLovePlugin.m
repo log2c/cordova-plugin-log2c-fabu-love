@@ -96,6 +96,10 @@
     NSString *newAppVersionText = NSLocalizedStringWithDefaultValue(@"app_update_new_version_text", @"Localizable", NSBundle.mainBundle, @"NEW VERSION", nil);
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:newAppVersionText message:changelog preferredStyle:UIAlertControllerStyleAlert];
 
+    if (changelog == nil) {
+        changelog = @"";
+    }
+
     changelog = [@"\n" stringByAppendingString:changelog];
 
     NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
