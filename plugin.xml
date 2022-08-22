@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova-plugin-log2c-fabu-love" version="2.0.2" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<plugin id="cordova-plugin-log2c-fabu-love" version="2.1.0" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>Cordova Fabu.love Update</name>
     <description>
         搭配爱发布服务端实现的App自动检查更新组件
@@ -26,6 +26,10 @@
         <source-file src="src/android/FabuLovePlugin.java" target-dir="src/com/log2c/cordova/plugin/fabulove" />
         <source-file src="src/android/ResponseModel.java" target-dir="src/com/log2c/cordova/plugin/fabulove" />
         <framework src="build-extras.gradle" custom="true" type="gradleReference" />
+
+        <config-file target="res/values/strings.xml" parent="/*">
+            <string name="tip_required_install_apk_permission">Require install apk permission!</string>
+        </config-file>
     </platform>
     <platform name="ios">
         <config-file parent="/*" target="config.xml">

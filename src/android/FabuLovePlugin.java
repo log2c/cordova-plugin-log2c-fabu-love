@@ -1,13 +1,18 @@
 package com.log2c.cordova.plugin.fabulove;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.azhon.appupdate.config.UpdateConfiguration;
 import com.azhon.appupdate.listener.OnDownloadListener;
@@ -33,6 +38,7 @@ public class FabuLovePlugin extends CordovaPlugin {
     private static final String TAG = FabuLovePlugin.class.getSimpleName();
     private static final String META_DATA_DOMAIN = "fabu_love_domain";
     private static final String META_DATA_TEAM_ID = "fabu_love_team_id";
+    private DownloadManager downloadManager;
 
     @Override
     protected void pluginInitialize() {
@@ -58,6 +64,23 @@ public class FabuLovePlugin extends CordovaPlugin {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == 1) {
+                downloadManager.download();
+            }
+        } else {
+            if (requestCode == 1) {
+                if (!checkHasInstallPermission()) {
+                    Toast.makeText(cordova.getContext().getApplicationContext(), getResourceId(cordova.getContext(), "tip_required_install_apk_permission", "string", cordova.getContext().getPackageName()), Toast.LENGTH_LONG).show();
+                    requestInstallPermission();
+                }
+            }
+        }
     }
 
     private void checkUpdate(boolean checkOnly, CallbackContext callbackContext) throws PackageManager.NameNotFoundException {
@@ -100,7 +123,7 @@ public class FabuLovePlugin extends CordovaPlugin {
                     return;
                 }
 
-                cordova.getActivity().runOnUiThread(() -> startDownload(callbackContext, forceUpdate, logs, downloadUrl, apkSize, versionCode, versionName, versionBean));
+                cordova.getActivity().runOnUiThread(() -> startDownloadAndInstall(callbackContext, forceUpdate, logs, downloadUrl, apkSize, versionCode, versionName, versionBean));
             }
 
             @Override
@@ -153,13 +176,21 @@ public class FabuLovePlugin extends CordovaPlugin {
         }).start();
     }
 
-    private void startDownload(CallbackContext callbackContext, boolean forceUpdate, String logs, String downloadUrl, long apkSize, int verCode, String verName, ResponseModel.DataBean.VersionBean versionBean) {
+    private boolean checkHasInstallPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            boolean hasInstallPermission = cordova.getActivity().getPackageManager().canRequestPackageInstalls();
+            return hasInstallPermission;
+        }
+        return true;
+    }
+
+    private void startDownloadAndInstall(CallbackContext callbackContext, boolean forceUpdate, String logs, String downloadUrl, long apkSize, int verCode, String verName, ResponseModel.DataBean.VersionBean versionBean) {
         DownloadManager manager = DownloadManager.getInstance(cordova.getContext());
         DecimalFormat df = new DecimalFormat("0.00");
         BigDecimal size = new BigDecimal(apkSize)
                 .divide(new BigDecimal(1024), 1, BigDecimal.ROUND_HALF_UP)
                 .divide(new BigDecimal(1024), 1, BigDecimal.ROUND_HALF_UP);
-        manager.setApkName(verName + ".apk")
+        downloadManager = manager.setApkName(verName + ".apk")
                 .setApkUrl(downloadUrl)
                 .setSmallIcon(getSmallIcon())
                 .setApkSize(df.format(size))
@@ -199,8 +230,20 @@ public class FabuLovePlugin extends CordovaPlugin {
                                     postErrorToCordova(-1, String.format("Download fail: %1$s", e.getMessage()), callbackContext);
                                 }
                             }
-                        }))
-                .download();
+                        }));
+
+        if (checkHasInstallPermission()) {
+            downloadManager.download();
+        } else {
+            requestInstallPermission();
+        }
+    }
+
+    private void requestInstallPermission() {
+        Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + cordova.getActivity().getPackageName()));
+        cordova.setActivityResultCallback(this);
+        cordova.getActivity().startActivityForResult(intent, 1, null);
+
     }
 
     private int getSmallIcon() {
