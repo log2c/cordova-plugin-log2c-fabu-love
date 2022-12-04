@@ -14,7 +14,8 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.azhon.appupdate.config.UpdateConfiguration;
+import androidx.annotation.NonNull;
+
 import com.azhon.appupdate.listener.OnDownloadListener;
 import com.azhon.appupdate.manager.DownloadManager;
 import com.google.gson.Gson;
@@ -30,6 +31,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DecimalFormat;
@@ -178,62 +180,57 @@ public class FabuLovePlugin extends CordovaPlugin {
 
     private boolean checkHasInstallPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            boolean hasInstallPermission = cordova.getActivity().getPackageManager().canRequestPackageInstalls();
-            return hasInstallPermission;
+            return cordova.getActivity().getPackageManager().canRequestPackageInstalls();
         }
         return true;
     }
 
     private void startDownloadAndInstall(CallbackContext callbackContext, boolean forceUpdate, String logs, String downloadUrl, long apkSize, int verCode, String verName, ResponseModel.DataBean.VersionBean versionBean) {
-        DownloadManager manager = DownloadManager.getInstance(cordova.getContext());
         DecimalFormat df = new DecimalFormat("0.00");
         BigDecimal size = new BigDecimal(apkSize)
-                .divide(new BigDecimal(1024), 1, BigDecimal.ROUND_HALF_UP)
-                .divide(new BigDecimal(1024), 1, BigDecimal.ROUND_HALF_UP);
-        downloadManager = manager.setApkName(verName + ".apk")
-                .setApkUrl(downloadUrl)
-                .setSmallIcon(getSmallIcon())
-                .setApkSize(df.format(size))
-                .setApkDescription(logs)
-                .setApkVersionCode(verCode)
-                .setApkVersionName(verName)
-                .setConfiguration(new UpdateConfiguration()
-                        .setForcedUpgrade(forceUpdate)
-                        .setShowNotification(true)
-                        .setDialogButtonTextColor(Color.WHITE)
-                        .setShowNotification(true)
-                        .setUsePlatform(false)
-                        .setOnDownloadListener(new OnDownloadListener() {
-                            @Override
-                            public void start() {
+                .divide(new BigDecimal(1024), 1, RoundingMode.HALF_UP)
+                .divide(new BigDecimal(1024), 1, RoundingMode.HALF_UP);
+        downloadManager = new DownloadManager.Builder(cordova.getActivity())
+                .apkUrl(downloadUrl)
+                .smallIcon(getSmallIcon())
+                .apkSize(df.format(size))
+                .apkDescription(logs)
+                .apkVersionCode(verCode)
+                .apkVersionName(verName)
+                .forcedUpgrade(forceUpdate)
+                .showNotification(true)
+                .dialogButtonTextColor(Color.WHITE)
+                .onDownloadListener(new OnDownloadListener() {
+                    @Override
+                    public void start() {
 
-                            }
+                    }
 
-                            @Override
-                            public void downloading(int max, int progress) {
+                    @Override
+                    public void downloading(int i, int i1) {
 
-                            }
+                    }
 
-                            @Override
-                            public void done(File apk) {
-                                addDownloadCount(versionBean.getAppId(), versionBean.get_id());
-                            }
+                    @Override
+                    public void done(@NonNull File file) {
+                        addDownloadCount(versionBean.getAppId(), versionBean.get_id());
+                    }
 
-                            @Override
-                            public void cancel() {
+                    @Override
+                    public void cancel() {
 
-                            }
+                    }
 
-                            @Override
-                            public void error(Exception e) {
-                                if (callbackContext != null) {
-                                    postErrorToCordova(-1, String.format("Download fail: %1$s", e.getMessage()), callbackContext);
-                                }
-                            }
-                        }));
+                    @Override
+                    public void error(@NonNull Throwable throwable) {
+                        if (callbackContext != null) {
+                            postErrorToCordova(-1, String.format("Download fail: %1$s", throwable.getMessage()), callbackContext);
+                        }
+                    }
+                }).build();
 
         if (checkHasInstallPermission()) {
-            downloadManager.download();
+            this.downloadManager.download();
         } else {
             requestInstallPermission();
         }
