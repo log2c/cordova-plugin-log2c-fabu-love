@@ -192,6 +192,7 @@ public class FabuLovePlugin extends CordovaPlugin {
                 .divide(new BigDecimal(1024), 1, RoundingMode.HALF_UP);
         downloadManager = new DownloadManager.Builder(cordova.getActivity())
                 .apkUrl(downloadUrl)
+                .apkName("v" + verCode + "_" + verName + ".apk")
                 .smallIcon(getSmallIcon())
                 .apkSize(df.format(size))
                 .apkDescription(logs)
