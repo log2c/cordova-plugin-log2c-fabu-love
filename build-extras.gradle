@@ -21,6 +21,6 @@ allprojects {
 }
 
 dependencies {
-    implementation 'com.azhon:appupdateX:4.2.5'
+    implementation 'io.github.azhon:appupdate:4.2.5'
     implementation 'com.google.code.gson:gson:2.+'
 }
