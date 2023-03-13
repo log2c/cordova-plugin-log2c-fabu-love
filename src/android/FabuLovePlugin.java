@@ -11,6 +11,12 @@ public class FabuLovePlugin extends CordovaPlugin {
     private static final String TAG = FabuLovePlugin.class.getSimpleName();
 
     @Override
+    protected void pluginInitialize() {
+        super.pluginInitialize();
+        UpdateHelper.getInstance(cordova.getContext()).checkUpdate(cordova.getActivity(), false, null);
+    }
+
+    @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         if ("checkUpdate".equalsIgnoreCase(action)) {
             JSONObject config = args.getJSONObject(0);
